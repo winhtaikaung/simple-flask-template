@@ -1,0 +1,35 @@
+version: '3'
+services:
+  postgres:
+    restart: always
+    image: postgres:10
+    environment:
+      - POSTGRES_USER=${DB_USER_NAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - ./postgres-data/postgres:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT}:5432"
+    networks:
+      - db_nw
+  app:
+    restart: always
+    build: .
+    ports:
+      - 5000:5000
+    links:
+      - postgres
+    networks:
+      - db_nw
+      - web_nw
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    entrypoint: ["python", "app.py"]
+networks:
+  db_nw:
+    driver: bridge
+  web_nw:
+      driver: bridge
