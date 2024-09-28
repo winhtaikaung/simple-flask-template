@@ -5,7 +5,7 @@ from os.path import join, dirname
 
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -21,9 +21,8 @@ url = url.format(os.environ["DB_USER_NAME"], os.environ["DB_PASSWORD"], os.envir
 
 if os.environ["ENV"] == 'local':
     engine = create_engine('sqlite:///lugyone.db', convert_unicode=True)
-else :
-    engine = create_engine(url,echo=True)
-
+else:
+    engine = create_engine(url, echo=True)
 
 
 db_session = scoped_session(sessionmaker(autocommit=False,
@@ -43,7 +42,29 @@ else:
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World!'
+    try:
+        # Example SQL query
+        query = text("SELECT version();")
+        
+        # Execute the query
+        result = db_session.execute(query)
+        
+        # Fetch all rows
+        rows = result.fetchall()
+        
+        # Convert rows to a list of dictionaries
+        version = [dict(row) for row in rows]
+        
+        # Return the result as JSON
+        return jsonify(version[0])
+    
+    except Exception as e:
+        # Handle any errors
+        return jsonify({"error": str(e)}), 500
+    
+    finally:
+        # Make sure to close the session
+        db_session.close()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ["PORT"]))
